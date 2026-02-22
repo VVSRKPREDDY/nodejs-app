@@ -39,6 +39,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         continue-on-error: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.12.0
       - name: Docker Login
         uses: docker/login-action@v3.7.0
         with:
@@ -50,6 +52,7 @@ jobs:
           context: ./app
           file: ./app/Dockerfile
           tags: ${{secrets.DOCKER_HUB_USERNAME}}/my_node_app:latest
+          load: false
           push: true
       - name: Login to ACR
         uses: docker/login-action@v3.7.0
@@ -57,9 +60,10 @@ jobs:
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
-      - name: Tag Image for ACR
-        run: |
-          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/my_node_app:latest ${{secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
-      - name: Push to ACR
-        run: |
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
+      - name: Build and Push to ACR
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: ./app
+          file: ./app/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
