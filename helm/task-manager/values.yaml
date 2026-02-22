@@ -1,7 +1,7 @@
 replicaCount: 2
  
 image:
-  repository: vvspreddyrepo.azurecr.io/my_node_app:latest
+  repository: vvspreddyrepo.azurecr.io/my_node_app
   tag: latest
   pullPolicy: Always
  
