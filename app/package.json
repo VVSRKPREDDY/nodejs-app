@@ -1,0 +1,11 @@
+{
+  "name": "task-manager",
+  "version": "1.0.0",
+  "description": "Node.js Task Manager for AKS deployment",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "license": "MIT"
+}
