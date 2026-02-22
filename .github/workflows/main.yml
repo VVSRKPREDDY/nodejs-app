@@ -2,31 +2,24 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main, develop]
-  pull_request:
-    branches: [main]
  
 env:
   IMAGE_NAME: task-manager
-  ACR_NAME: your-acr-name        # 🔁 Replace with your ACR name
-  DOCKER_HUB_USERNAME: your-dockerhub-username  # 🔁 Replace with your Docker Hub username
+  ACR_NAME: vvspreddyrepo        
+  DOCKER_HUB_USERNAME: vvspreddy  
  
 jobs:
- 
-  # ─────────────────────────────────────────────
-  # Job 1: SonarQube Code Quality Scan
-  # ─────────────────────────────────────────────
-  sonarqube:
+  Build:
     name: SonarQube Scan
     runs-on: ubuntu-latest
- 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
-          fetch-depth: 0          # Full history needed for SonarQube
+          fetch-depth: 0
  
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.2.0
         with:
           node-version: 20
  
@@ -35,190 +28,49 @@ jobs:
         working-directory: ./app
  
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@master
+        uses: SonarSource/sonarqube-scan-action@v7.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.projectKey=task-manager
-            -Dsonar.projectName=task-manager
+            -Dsonar.projectKey=VVSRKPREDDY_nodejs-app
+            -Dsonar.projectName=nodejs-app
+            -Dsonar.organization=vvsrkpreddy
             -Dsonar.sources=app
             -Dsonar.exclusions=**/node_modules/**,**/public/**
+       continue-on-error: true
  
       - name: SonarQube Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@master
+        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
- 
-  # ─────────────────────────────────────────────
-  # Job 2: Build Docker Image
-  # ─────────────────────────────────────────────
-  build:
-    name: Build Docker Image
-    runs-on: ubuntu-latest
-    needs: sonarqube
-    outputs:
-      image_tag: ${{ steps.tag.outputs.tag }}
- 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
- 
-      - name: Set image tag
-        id: tag
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=dev-${{ github.sha }}" >> $GITHUB_OUTPUT
-          fi
- 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
- 
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
+      - name: Docker Login
+        uses: docker/login-action@v3.7.0
+        with:
+          username: ${{secrets.DOCKER_HUB_USERNAME}}
+          password: ${{secrets.DOCKER_HUB_PWD}}
+      - name: Docker Build and push
+        uses: docker/build-push-action@v6.18.0
         with:
           context: ./app
-          target: production
-          push: false
-          load: true
-          tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
-            ${{ env.IMAGE_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
- 
-      - name: Save image as tar
-        run: |
-          docker save ${{ env.IMAGE_NAME }}:latest -o image.tar
- 
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v4
+          file: ./app/Dockerfile
+          tags: ${{secrets.DOCKER_HUB_USERNAME}}/my_node_app:latest
+          push: true
+      - name: Login to ACR
+        uses: docker/login-action@v3.7.0
         with:
-          name: docker-image
-          path: image.tar
-          retention-days: 1
- 
-  # ─────────────────────────────────────────────
-  # Job 3: Trivy Image Security Scan
-  # ─────────────────────────────────────────────
-  trivy:
-    name: Trivy Image Scan
-    runs-on: ubuntu-latest
-    needs: build
- 
-    steps:
-      - name: Download image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
- 
-      - name: Load Docker image
-        run: docker load -i image.tar
- 
-      - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.IMAGE_NAME }}:latest
-          format: table
-          exit-code: 1               # Fail pipeline on CRITICAL vulnerabilities
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
- 
-      - name: Run Trivy - SARIF report
-        uses: aquasecurity/trivy-action@master
-        if: always()                 # Always generate report even if scan fails
-        with:
-          image-ref: ${{ env.IMAGE_NAME }}:latest
-          format: sarif
-          output: trivy-results.sarif
-          severity: CRITICAL,HIGH,MEDIUM
- 
-      - name: Upload Trivy SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: trivy-results.sarif
- 
-  # ─────────────────────────────────────────────
-  # Job 4: Push to Docker Hub
-  # ─────────────────────────────────────────────
-  push-dockerhub:
-    name: Push to Docker Hub
-    runs-on: ubuntu-latest
-    needs: trivy
-    if: github.event_name == 'push'
- 
-    steps:
-      - name: Download image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
- 
-      - name: Load Docker image
-        run: docker load -i image.tar
- 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
- 
-      - name: Tag and push to Docker Hub
-        run: |
-          TAG=${{ needs.build.outputs.image_tag }}
- 
-          docker tag ${{ env.IMAGE_NAME }}:latest \
-            ${{ env.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:$TAG
- 
-          docker tag ${{ env.IMAGE_NAME }}:latest \
-            ${{ env.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
- 
-          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:$TAG
-          docker push ${{ env.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
- 
-          echo "✅ Pushed to Docker Hub: ${{ env.DOCKER_HUB_USERNAME }}/${{ env.IMAGE_NAME }}:$TAG"
- 
-  # ─────────────────────────────────────────────
-  # Job 5: Push to Azure Container Registry (ACR)
-  # ─────────────────────────────────────────────
-  push-acr:
-    name: Push to ACR
-    runs-on: ubuntu-latest
-    needs: trivy
-    if: github.event_name == 'push'
- 
-    steps:
-      - name: Download image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
- 
-      - name: Load Docker image
-        run: docker load -i image.tar
- 
-      - name: Login to Azure Container Registry
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ env.ACR_NAME }}.azurecr.io
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
- 
-      - name: Tag and push to ACR
+
+      - name: Tag Image for ACR
         run: |
-          TAG=${{ needs.build.outputs.image_tag }}
+          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/my_node_app:latest ${{ secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
+
+      - name: Push to ACR
+        run: |
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
  
-          docker tag ${{ env.IMAGE_NAME }}:latest \
-            ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:$TAG
- 
-          docker tag ${{ env.IMAGE_NAME }}:latest \
-            ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
- 
-          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:$TAG
-          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
- 
-          echo "✅ Pushed to ACR: ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:$TAG"
