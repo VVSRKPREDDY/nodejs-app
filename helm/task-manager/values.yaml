@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 3
  
 image:
   repository: vvspreddyrepo.azurecr.io/my_node_app
