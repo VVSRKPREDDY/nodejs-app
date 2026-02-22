@@ -1,4 +1,5 @@
-name: CI/CD Pipeline 
+---
+name: CI/CD Pipeline
 on:
   push:
     branches: main
@@ -11,16 +12,13 @@ jobs:
         uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
- 
       - name: Setup Node.js
         uses: actions/setup-node@v6.2.0
         with:
           node-version: 20
- 
       - name: Install dependencies
         run: npm install
         working-directory: ./app
- 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v7.0.0
         env:
@@ -28,13 +26,10 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.projectKey=VVSRKPREDDY_nodejs-app
-            -Dsonar.projectName=nodejs-app
-            -Dsonar.organization=vvsrkpreddy
-            -Dsonar.sources=app
+            -Dsonar.projectKey=VVSRKPREDDY_nodejs-app -Dsonar.projectName=nodejs-app
+            -Dsonar.organization=vvsrkpreddy -Dsonar.sources=app
             -Dsonar.exclusions=**/node_modules/**,**/public/**
-       continue-on-error: true
- 
+        continue-on-error: true
       - name: SonarQube Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
         timeout-minutes: 5
@@ -59,12 +54,10 @@ jobs:
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
-
       - name: Tag Image for ACR
-        run: |
-          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/my_node_app:latest ${{ secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
-
+        run: >
+          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/my_node_app:latest ${{
+          secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
       - name: Push to ACR
         run: |
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
- 
