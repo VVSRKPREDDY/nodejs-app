@@ -51,7 +51,7 @@ jobs:
         with:
           context: ./app
           file: ./app/Dockerfile
-          tags: ${{secrets.DOCKER_HUB_USERNAME}}/my_node_app:latest
+          tags: ${{secrets.DOCKER_HUB_USERNAME}}/my_node_app:v1
           load: false
           push: true
       - name: Login to ACR
@@ -66,4 +66,4 @@ jobs:
           context: ./app
           file: ./app/Dockerfile
           push: true
-          tags: vvspreddyrepo.azurecr.io/my_node_app:latest
+          tags: vvspreddyrepo.azurecr.io/my_node_app:v1
