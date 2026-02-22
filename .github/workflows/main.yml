@@ -1,13 +1,7 @@
 name: CI/CD Pipeline 
 on:
   push:
-    branches: [main, develop]
- 
-env:
-  IMAGE_NAME: task-manager
-  ACR_NAME: vvspreddyrepo        
-  DOCKER_HUB_USERNAME: vvspreddy  
- 
+    branches: main
 jobs:
   Build:
     name: SonarQube Scan
