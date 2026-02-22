@@ -59,8 +59,7 @@ jobs:
           password: ${{ secrets.ACR_PASSWORD }}
       - name: Tag Image for ACR
         run: |
-          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/my_node_app:latest ${{
-          secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
+          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/my_node_app:latest ${{secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
       - name: Push to ACR
         run: |
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
