@@ -28,7 +28,8 @@ jobs:
           args: >
             -Dsonar.projectKey=VVSRKPREDDY_nodejs-app 
             -Dsonar.projectName=nodejs-app
-            -Dsonar.organization=vvsrkpreddy -Dsonar.sources=app
+            -Dsonar.organization=vvsrkpreddy 
+            -Dsonar.sources=app
             -Dsonar.exclusions=**/node_modules/**,**/public/**
         continue-on-error: true
       - name: SonarQube Quality Gate
@@ -57,7 +58,7 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - name: Tag Image for ACR
-        run: >
+        run: |
           docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/my_node_app:latest ${{
           secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
       - name: Push to ACR
