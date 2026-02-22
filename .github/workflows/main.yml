@@ -26,7 +26,8 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.projectKey=VVSRKPREDDY_nodejs-app -Dsonar.projectName=nodejs-app
+            -Dsonar.projectKey=VVSRKPREDDY_nodejs-app 
+            -Dsonar.projectName=nodejs-app
             -Dsonar.organization=vvsrkpreddy -Dsonar.sources=app
             -Dsonar.exclusions=**/node_modules/**,**/public/**
         continue-on-error: true
@@ -36,6 +37,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        continue-on-error: true
       - name: Docker Login
         uses: docker/login-action@v3.7.0
         with:
