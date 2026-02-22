@@ -66,4 +66,4 @@ jobs:
           context: ./app
           file: ./app/Dockerfile
           push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/my_node_app:latest
+          tags: vvspreddyrepo.azurecr.io/my_node_app:latest
