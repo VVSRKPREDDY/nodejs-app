@@ -2,7 +2,7 @@ replicaCount: 2
  
 image:
   repository: vvspreddyrepo.azurecr.io/my_node_app
-  tag: v1
+  tag: latest
   pullPolicy: Always
  
 serviceAccount:
